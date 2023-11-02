@@ -57,3 +57,21 @@ input::placeholder{
   margin: 2%;
   text-align: center;
 }
+textarea {
+    border-radius: 4px;
+    border: 3px solid lightgrey;
+    padding: 10px 3px;
+    width: 300px;
+    height: 100px; /* Set the desired height */
+    font-family: Arial;
+    font-weight: 400;
+    font-size: 15px;
+    color: grey; /* Set the text color */
+}
+
+textarea::placeholder {
+    color: grey;
+    font-family: Arial;
+    font-weight: 400;
+    font-size: 15px;
+}

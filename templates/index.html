@@ -7,21 +7,55 @@
 </head>
 
 <body>
+    {% include "header.html" %}
+
+    <div class="content">
+        {% block content %}{% endblock %}
+    </div>
    <section class="home" id="home">
 
   <div class="content">
-    <span>Welcome to TopRecipe</span>
-    <h3>different spices for the different tastes 😋</h3>
-    <p>Red Lantern Kitchen aims to provide both exceptional flavor and convenience, and we hope that you will have a positive experience using our services</p>
+      <h1>Welcome to TopRecipe</h1>
+      <h3>Different Spices for Different Tastes 😋</h3>
+      <p>TopRecipe aims to provide you with a diverse range of exceptional flavors, making your culinary journey a
+          delightful experience. Explore a world of recipes that cater to every palate and culinary curiosity. Whether
+          you're a seasoned chef or a novice cook, our platform offers the perfect recipe for every occasion.</p>
   </div>
 
   <div class="image">
-    <img src="https://www.pngall.com/wp-content/uploads/5/Noodles-PNG-Image.png" alt="" class="home-img">
-    <img src="https://cdn.discordapp.com/attachments/958000062556934215/1102633295675674674/home-parallax-img1.png" alt="" class="home-parallax-img">
+    <img src="{{ url_for('static', filename='img/Noodles-PNG-Image.png')}}" alt="" class="home-img">
+    <img src="{{ url_for('static', filename='img/home-parallax-img2.png')}}" alt="" class="home-parallax-img">
   </div>
 
-</section>
+    </section>
 
-<div class="underline"></div>
+    <div class="underline"></div>
+    <div>
+    {%  if user_is_authenticated  %}
+    <div style="padding: 20px">
+        <h2>Recipes list</h2>
+        <div class="addRecipe">
+            <a href="{{ url_for('create_recipe') }}" class="btn">Add recipe</a>
+        </div>
+    </div>
+    {% endif %}
+        <div class="box-container">
+        {% for recipe in recipes %}
+            <div class="box">
+              <div class="image">
+                <img src="{{recipe.image_url}}">
+              </div>
+              <div class="content">
+                <h3>
+                    <a class="link" href="{{ url_for('detail_recipe', id=recipe.id) }}">{{ recipe.title }}</a>
+                    <h2>Ingredients: {{ recipe.ingredients }}</h2>
+                </h3>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+
+
+    </div>
 </body>
 </html>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename= 'css/recipe/detail.css') }}">
+
+</head>
+<body>
+<div class="page-borders">
+    <div class="main-card">
+        <div class="for-image">
+            <img src="{{recipe.image_url}}"
+                 width="500px">
+        </div>
+        <div class="for-main-info">
+            <h1>{{recipe.title}}</h1>
+            <div class="underline"></div>
+            <h3>Instruction:</h3>
+            <h2>{{recipe.instructions}}</h2>
+            <h3>ingredients:</h3>
+            <h2>{{recipe.ingredients}}</h2>
+        </div>
+    </div>
+</div>
+<a href="{{ url_for('update_recipe', id=recipe.id) }}" class="red-button">Edit</a>
+<a href="{{ url_for('delete_recipe', id=recipe.id) }}" class="red-button" onclick="return confirm('Are you sure you want to delete this recipe?')">Delete</a>
+</body>
+</html>

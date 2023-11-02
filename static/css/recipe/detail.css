@@ -1,0 +1,91 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@100;300;400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Satisfy&display=swap");
+
+.page-borders{
+    margin: 0 5%;
+}
+
+.main-card{
+    box-shadow: 0 10px 20px rgba(210, 22, 22, 0.2);
+    border-radius: 5px;
+    margin: 50px 0;
+    padding: 20px 0;
+    display: flex;
+    justify-content: space-around;
+}
+.feature-card{
+    box-shadow: 0 10px 20px rgba(210, 16, 16, 0.2);
+    border-radius: 5px;
+    margin: 50px 0;
+    padding: 20px;
+}
+
+.feature-card h2{
+    margin-bottom: 20px;
+}
+
+.for-image{
+}
+
+.for-main-info{
+    margin-top: 20px;
+    width: 40%;
+}
+
+*{
+    font-family: 'Poppins', sans-serif;
+}
+h1, h2, h3, p{
+    margin: 5px;
+}
+p{
+    font-weight: bold;
+}
+h3{
+    color: #aaaaaa;
+}
+.underline{
+    margin: 15px 5px;
+    width: 100%;
+    border: 1px solid #dddddd;
+}
+
+.red-button{
+    width: auto;
+    padding: 10px 20px;
+    margin: 20px 25px 20px 5px;
+    border: none;
+    border-radius: 8px;
+    background-color: #9a3939;
+    color: white;
+    font-family: Arial;
+    font-weight: bolder;
+    font-size: 25px;
+    transition: background-color 0.2s ease-in-out;
+}
+.quantity-input{
+    text-align: center;
+    width: 100px;
+    margin: 20px 5px 20px 5px;
+    border: none;
+    border-radius: 8px;
+    background-color: #9a3939;
+    color: white;
+    font-family: Arial;
+    font-weight: bolder;
+    font-size: 25px;
+}
+.increase-btn{
+    text-align-all: justify;
+    width: 30px ;
+    border: none;
+    border-radius: 8px;
+    background-color: #9a3939;
+    color: white;
+    font-family: Arial;
+    font-weight: bolder;
+    font-size: 25px;
+}
+.red-button, .increase-btn:hover{
+    background-color: #d21414;
+}

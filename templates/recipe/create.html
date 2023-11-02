@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="{{ url_for('static', filename= 'css/user/create.css') }}">
+
+    <title>Title</title>
+</head>
+<body>
+<h1>Create Recipe</h1>
+<div class="input-box">
+<form class="form" method="POST" action="{{ url_for('create_recipe') }}">
+    <label for="title">Title:</label>
+    <input type="text" name="title" id="title" required>
+    <br>
+    <label for="image_url">Image URL:</label>
+    <input type="text" name="image_url" id="image_url">
+    <br>
+    <label for="ingredients">Ingredients:</label>
+    <textarea name="ingredients" id="ingredients" required></textarea>
+    <br>
+    <label for="instructions">Instructions:</label>
+    <textarea name="instructions" id="instructions" required></textarea>
+    <br>
+    <button type="submit" class="submitButton">Create Recipe</button>
+</form>
+</div>
+</body>
+</html>

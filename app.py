@@ -1,14 +1,26 @@
 # app.py
 from datetime import datetime
-
-from flask import Flask, render_template, request, redirect, url_for, flash
+from functools import wraps
+# from flask_jwt_extended import JWTManager
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import check_password_hash, generate_password_hash
+from flask_wtf import FlaskForm
+from wtforms import StringField, TextAreaField
+from wtforms.validators import DataRequired
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key_here'  # Change this to a random secret key
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///recipes.db'  # Database file will be created in the project folder
 db = SQLAlchemy(app)
+
+
+def user_auth_context_processor():
+    user_is_authenticated = 'user_id' in session  # Check if 'user_id' is in the session
+    return {'user_is_authenticated': user_is_authenticated}
+
+
+app.context_processor(user_auth_context_processor)
 
 
 class User(db.Model):
@@ -41,6 +53,7 @@ class Category(db.Model):
 
 with app.app_context():
     db.create_all()
+
 
 
 # @app.route('/signup', methods=['POST'])
@@ -78,12 +91,38 @@ with app.app_context():
 #
 #     return jsonify({'message': 'Login successful'}), 200
 
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not user_is_authenticated1():
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
+def user_is_authenticated1():
+    return 'user_id' in session
+
+
+def get_current_user():
+    user_id = session.get('user_id')
+    if user_id is not None:
+        # You can query your database or user data store here to retrieve the user
+        # Replace this with your actual logic to fetch the user by their ID
+        user = User.query.get(user_id)  # Replace User with your actual User model
+        return user
+    return None
+
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    session.pop('_flashes', None)
+    recipes = Recipe.query.all()  # Query all recipes from the database
+    return render_template('index.html', recipes=recipes)
 
 
+# USER routes
 @app.route("/users")
 def user_list():
     users = db.session.execute(db.select(User).order_by(User.username)).scalars()
@@ -107,18 +146,64 @@ def user_create():
         )
         db.session.add(user)
         db.session.commit()
-        return redirect(url_for("user_detail", id=user.id))
+        return redirect(url_for("user_detail"))
+    session['isLoggedin'] = True
 
-    return render_template("user/create.html")
+    return render_template("user/create.html", user_is_authenticated=user_is_authenticated1)
 
 
-@app.route("/user/<int:id>")
-def user_detail(id):
-    user = db.get_or_404(User, id)
-    return render_template("user/detail.html", user=user)
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+
+        # Check if a user with the provided username exists
+        user = User.query.filter_by(username=username).first()
+
+        if user and check_password_hash(user.password, password):
+            # Password is correct, log the user in
+            session["user_id"] = user.id
+            session['isLoggedin'] = True
+            flash("Login successful!", "success")
+            return redirect(url_for("user_detail", id=user.id))
+        else:
+            # Invalid username or password
+            flash("Invalid username or password. Please try again.", "error")
+
+    return render_template("user/login.html", user_is_authenticated=user_is_authenticated1)
+
+
+@app.route('/logout', methods=['GET', 'POST'])
+def logout():
+    # get value from get request and clear sessions values
+    if request.method == 'GET':
+        session.pop('user_id', None)
+        session['isLoggedin'] = False
+        session.pop('_flashes', None)
+        # success message to users
+        flash("You are logged out", 'success')
+    return redirect(url_for('index'))
+
+
+@app.route("/user/info")
+@login_required
+def user_detail():
+    current_user = get_current_user()
+    if current_user:
+        return render_template("user/detail.html", user=current_user, user_is_authenticated=user_is_authenticated1)
+    else:
+        return page_not_found()
+
+
+@app.errorhandler(404)
+def page_not_found(error):
+    # 404 error is redirected to 404.html
+    return render_template('404.html')
 
 
 @app.route("/user/<int:id>/delete", methods=["GET", "POST"])
+@login_required
 def user_delete(id):
     user = db.get_or_404(User, id)
 
@@ -128,6 +213,77 @@ def user_delete(id):
         return redirect(url_for("user_list"))
 
     return render_template("user/delete.html", user=user)
+
+
+# RECIPE routes
+
+@app.route('/create_recipe', methods=['GET', 'POST'])
+@login_required
+def create_recipe():
+    if request.method == 'POST':
+        title = request.form.get('title')
+        image_url = request.form.get('image_url')
+        ingredients = request.form.get('ingredients')
+        instructions = request.form.get('instructions')
+
+        recipe = Recipe(
+            title=title,
+            image_url=image_url,
+            ingredients=ingredients,
+            instructions=instructions
+        )
+
+        db.session.add(recipe)
+        db.session.commit()
+
+        flash('Recipe created successfully', 'success')
+        return redirect(url_for('index'))
+
+    return render_template('recipe/create.html')
+
+
+# Read a recipe
+@app.route('/recipe/<int:id>')
+def detail_recipe(id):
+    recipe = Recipe.query.get_or_404(id)
+    return render_template('recipe/detail.html', recipe=recipe)
+
+
+# Update a recipe
+@app.route('/update_recipe/<int:id>', methods=['GET', 'POST'])
+@login_required
+def update_recipe(id):
+    recipe = Recipe.query.get_or_404(id)
+
+    if request.method == 'POST':
+        recipe.title = request.form.get('title')
+        recipe.image_url = request.form.get('image_url')
+        recipe.ingredients = request.form.get('ingredients')
+        recipe.instructions = request.form.get('instructions')
+
+        db.session.commit()
+
+        flash('Recipe updated successfully', 'success')
+        return redirect(url_for('detail_recipe', id=recipe.id))
+
+    return render_template('recipe/update.html', recipe=recipe)
+
+
+# Delete a recipe
+@app.route('/recipe/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_recipe(id):
+    recipe = Recipe.query.get_or_404(id)
+    db.session.delete(recipe)
+    db.session.commit()
+    flash('Recipe deleted successfully', 'success')
+    return redirect(url_for('index'))
+
+
+# @app.route('/recipes')
+# def recipe_list():
+#     recipes = Recipe.query.all()  # Query all recipes from the database
+#     return render_template('index.html', recipes=recipes)
 
 
 if __name__ == '__main__':
