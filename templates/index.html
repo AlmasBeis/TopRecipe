@@ -31,9 +31,9 @@
 
     <div class="underline"></div>
     <div>
+        <h1 style="text-align:center;">Recipes list</h1>
     {%  if user_is_authenticated  %}
     <div style="padding: 20px">
-        <h2>Recipes list</h2>
         <div class="addRecipe">
             <a href="{{ url_for('create_recipe') }}" class="btn">Add recipe</a>
         </div>

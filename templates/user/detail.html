@@ -11,6 +11,7 @@
     <div class="content">
         {% block content %}{% endblock %}
     </div>
+     <a href="{{ url_for('index') }}" class="btn btn-primary">Back to Main Page</a>
     <div class="page-borders">
         {% if 'user_id' in session %}
         <div class="profile-card">

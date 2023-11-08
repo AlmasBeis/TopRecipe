@@ -4,10 +4,8 @@ from functools import wraps
 # from flask_jwt_extended import JWTManager
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import relationship
 from werkzeug.security import check_password_hash, generate_password_hash
-from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField
-from wtforms.validators import DataRequired
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key_here'  # Change this to a random secret key
@@ -38,6 +36,15 @@ class Recipe(db.Model):
     instructions = db.Column(db.Text, nullable=False)
     rating = db.Column(db.Float, default=0.0)
     num_ratings = db.Column(db.Integer, default=0)
+    ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredient.id'))
+    ingredient = relationship('Ingredient')
+
+
+class Ingredient(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    image_url = db.Column(db.String(200), nullable=True)
+    description = db.Column(db.Text, nullable=False)
 
 
 class Category(db.Model):
@@ -53,7 +60,6 @@ class Category(db.Model):
 
 with app.app_context():
     db.create_all()
-
 
 
 # @app.route('/signup', methods=['POST'])
@@ -190,6 +196,7 @@ def logout():
 @login_required
 def user_detail():
     current_user = get_current_user()
+    recipes = Recipe.query.all()
     if current_user:
         return render_template("user/detail.html", user=current_user, user_is_authenticated=user_is_authenticated1)
     else:
@@ -223,13 +230,14 @@ def create_recipe():
     if request.method == 'POST':
         title = request.form.get('title')
         image_url = request.form.get('image_url')
-        ingredients = request.form.get('ingredients')
         instructions = request.form.get('instructions')
+        ingredient_id = request.form.get('ingredient_id')  # Get the selected ingredient's ID
 
+        ingredient = Ingredient.query.get(ingredient_id)
         recipe = Recipe(
             title=title,
             image_url=image_url,
-            ingredients=ingredients,
+            ingredients=ingredient,
             instructions=instructions
         )
 
