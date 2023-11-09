@@ -22,6 +22,13 @@
     <label for="instructions">Instructions:</label>
     <textarea name="instructions" id="instructions" required></textarea>
     <br>
+    {%  if user_is_authenticated  %}
+    <div style="padding: 20px">
+        <div class="submitButton">
+            <a href="{{ url_for('create_ingredient_form') }}" >Add ingredient</a>
+        </div>
+    </div>
+    {% endif %}
     <div class="form-group">
         <label for="ingredients">Select an Ingredient:</label>
         <select id="ingredients" name="ingredient_id" class="form-control">

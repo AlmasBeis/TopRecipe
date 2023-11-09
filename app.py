@@ -32,13 +32,21 @@ class Recipe(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     image_url = db.Column(db.String(200), nullable=True)
-    ingredients = db.Column(db.Text, nullable=False)
     instructions = db.Column(db.Text, nullable=False)
     rating = db.Column(db.Float, default=0.0)
     num_ratings = db.Column(db.Integer, default=0)
     ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredient.id'))
     ingredient = relationship('Ingredient')
+    comments = relationship('Comment')
 
+
+class Comment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    recipe_id = db.Column(db.Integer, db.ForeignKey('recipe.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    text = db.Column(db.Text, nullable=False)
+
+    user = db.relationship('User')
 
 class Ingredient(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -227,6 +235,7 @@ def user_delete(id):
 @app.route('/create_recipe', methods=['GET', 'POST'])
 @login_required
 def create_recipe():
+    ingredients = Ingredient.query.all()
     if request.method == 'POST':
         title = request.form.get('title')
         image_url = request.form.get('image_url')
@@ -237,8 +246,8 @@ def create_recipe():
         recipe = Recipe(
             title=title,
             image_url=image_url,
-            ingredients=ingredient,
-            instructions=instructions
+            instructions=instructions,
+            ingredient_id=ingredient_id
         )
 
         db.session.add(recipe)
@@ -247,7 +256,7 @@ def create_recipe():
         flash('Recipe created successfully', 'success')
         return redirect(url_for('index'))
 
-    return render_template('recipe/create.html')
+    return render_template('recipe/create.html', ingredients=ingredients)
 
 
 # Read a recipe
@@ -257,6 +266,21 @@ def detail_recipe(id):
     return render_template('recipe/detail.html', recipe=recipe)
 
 
+@app.route('/recipe/<int:id>/add_comment', methods=['POST'])
+@login_required
+def add_comment(id):
+    recipe = Recipe.query.get(id)
+    text = request.form.get('comment')
+
+    if text:
+        user = get_current_user()  # Assuming get_current_user is available in the current module
+        user_id = user.id if user else None
+
+        new_comment = Comment(text=text, recipe_id=recipe.id, user_id=user_id)
+        db.session.add(new_comment)
+        db.session.commit()
+
+    return redirect(url_for('detail_recipe', id=id))
 # Update a recipe
 @app.route('/update_recipe/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -287,6 +311,29 @@ def delete_recipe(id):
     flash('Recipe deleted successfully', 'success')
     return redirect(url_for('index'))
 
+
+@app.route('/create-ingredient', methods=['GET'])
+def create_ingredient_form():
+    return render_template('ingredients/create.html')
+
+
+# Add a route for handling the form submission
+@app.route('/create-ingredient', methods=['POST'])
+def create_ingredient():
+    title = request.form.get('title')
+    image_url = request.form.get('image_url')
+    description = request.form.get('description')
+
+    if title and description:
+        new_ingredient = Ingredient(title=title, image_url=image_url, description=description)
+        db.session.add(new_ingredient)
+        db.session.commit()
+
+    return redirect(url_for('create_recipe'))
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
 
 # @app.route('/recipes')
 # def recipe_list():

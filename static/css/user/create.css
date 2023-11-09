@@ -75,3 +75,7 @@ textarea::placeholder {
     font-weight: 400;
     font-size: 15px;
 }
+*{
+  font-family: Arial;
+  text-decoration: none;
+}
