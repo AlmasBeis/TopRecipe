@@ -1,0 +1,25 @@
+ <div>
+        <h1 style="text-align:center;">Recipes list</h1>
+    {%  if user_is_authenticated  %}
+    <div style="padding: 20px">
+        <div class="addRecipe">
+            <a href="{{ url_for('create_recipe') }}" class="btn">Add recipe</a>
+        </div>
+    </div>
+    {% endif %}
+        <div class="box-container">
+        {% for recipe in recipes %}
+            <div class="box">
+              <div class="image">
+                <img src="{{recipe.image_url}}">
+              </div>
+              <div class="content">
+                <h3>
+                    <a class="link" href="{{ url_for('detail_recipe', id=recipe.id) }}">{{ recipe.title }}</a>
+                    <h2>Ingredients: {{ recipe.ingredients }}</h2>
+                </h3>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+    </div>
