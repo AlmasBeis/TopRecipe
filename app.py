@@ -28,6 +28,13 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
 
+recipe_ingredient_association = db.Table(
+    'recipe_ingredient_association',
+    db.Column('recipe_id', db.Integer, db.ForeignKey('recipe.id')),
+    db.Column('ingredient_id', db.Integer, db.ForeignKey('ingredient.id'))
+)
+
+
 class Recipe(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
@@ -35,9 +42,10 @@ class Recipe(db.Model):
     instructions = db.Column(db.Text, nullable=False)
     rating = db.Column(db.Float, default=0.0)
     num_ratings = db.Column(db.Integer, default=0)
-    ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredient.id'))
-    ingredient = relationship('Ingredient')
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    ingredients = db.relationship('Ingredient', secondary=recipe_ingredient_association, back_populates='recipes')
     comments = relationship('Comment')
+    user = db.relationship('User')
 
 
 class Comment(db.Model):
@@ -45,14 +53,15 @@ class Comment(db.Model):
     recipe_id = db.Column(db.Integer, db.ForeignKey('recipe.id'))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     text = db.Column(db.Text, nullable=False)
-
     user = db.relationship('User')
+
 
 class Ingredient(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     image_url = db.Column(db.String(200), nullable=True)
     description = db.Column(db.Text, nullable=False)
+    recipes = db.relationship('Recipe', secondary=recipe_ingredient_association, back_populates='ingredients')
 
 
 class Category(db.Model):
@@ -122,8 +131,6 @@ def user_is_authenticated1():
 def get_current_user():
     user_id = session.get('user_id')
     if user_id is not None:
-        # You can query your database or user data store here to retrieve the user
-        # Replace this with your actual logic to fetch the user by their ID
         user = User.query.get(user_id)  # Replace User with your actual User model
         return user
     return None
@@ -160,10 +167,10 @@ def user_create():
         )
         db.session.add(user)
         db.session.commit()
-        return redirect(url_for("user_detail"))
+        return redirect(url_for("user_detail", user_id=user.id))
     session['isLoggedin'] = True
 
-    return render_template("user/create.html", user_is_authenticated=user_is_authenticated1)
+    return render_template("user/create.html")
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -185,7 +192,7 @@ def login():
             # Invalid username or password
             flash("Invalid username or password. Please try again.", "error")
 
-    return render_template("user/login.html", user_is_authenticated=user_is_authenticated1)
+    return render_template("user/login.html")
 
 
 @app.route('/logout', methods=['GET', 'POST'])
@@ -204,11 +211,12 @@ def logout():
 @login_required
 def user_detail():
     current_user = get_current_user()
-    recipes = Recipe.query.all()
     if current_user:
-        return render_template("user/detail.html", user=current_user, user_is_authenticated=user_is_authenticated1)
+        recipes = Recipe.query.filter_by(user_id=current_user.id).all()
+        return render_template("user/detail.html", user=current_user, user_is_authenticated=user_is_authenticated1,
+                               recipes=recipes)
     else:
-        return page_not_found()
+        return render_template('404.html')
 
 
 @app.errorhandler(404)
@@ -236,18 +244,23 @@ def user_delete(id):
 @login_required
 def create_recipe():
     ingredients = Ingredient.query.all()
+
     if request.method == 'POST':
         title = request.form.get('title')
         image_url = request.form.get('image_url')
         instructions = request.form.get('instructions')
-        ingredient_id = request.form.get('ingredient_id')  # Get the selected ingredient's ID
+        selected_ingredient_ids = request.form.getlist('ingredient_ids')  # Get a list of selected ingredient IDs
 
-        ingredient = Ingredient.query.get(ingredient_id)
+        ingredients_selected = Ingredient.query.filter(Ingredient.id.in_(selected_ingredient_ids)).all()
+        user = get_current_user()
+        user_id = user.id if user else None
+
         recipe = Recipe(
             title=title,
             image_url=image_url,
             instructions=instructions,
-            ingredient_id=ingredient_id
+            ingredients=ingredients_selected,
+            user_id=user_id
         )
 
         db.session.add(recipe)
@@ -263,7 +276,12 @@ def create_recipe():
 @app.route('/recipe/<int:id>')
 def detail_recipe(id):
     recipe = Recipe.query.get_or_404(id)
-    return render_template('recipe/detail.html', recipe=recipe)
+    ingredients = list(recipe.ingredients)
+    user = get_current_user()
+    user_id = user.id if user else None
+    if not ingredients:
+        return render_template('404.html')
+    return render_template('recipe/detail.html', recipe=recipe, ingredients=ingredients, user_id=user_id)
 
 
 @app.route('/recipe/<int:id>/add_comment', methods=['POST'])
@@ -273,7 +291,7 @@ def add_comment(id):
     text = request.form.get('comment')
 
     if text:
-        user = get_current_user()  # Assuming get_current_user is available in the current module
+        user = get_current_user()
         user_id = user.id if user else None
 
         new_comment = Comment(text=text, recipe_id=recipe.id, user_id=user_id)
@@ -281,24 +299,44 @@ def add_comment(id):
         db.session.commit()
 
     return redirect(url_for('detail_recipe', id=id))
+
+
 # Update a recipe
 @app.route('/update_recipe/<int:id>', methods=['GET', 'POST'])
 @login_required
 def update_recipe(id):
     recipe = Recipe.query.get_or_404(id)
+    ingredients = Ingredient.query.all()
 
     if request.method == 'POST':
-        recipe.title = request.form.get('title')
-        recipe.image_url = request.form.get('image_url')
-        recipe.ingredients = request.form.get('ingredients')
-        recipe.instructions = request.form.get('instructions')
+        title = request.form.get('title')
+        image_url = request.form.get('image_url')
+        instructions = request.form.get('instructions')
+        selected_ingredient_ids = request.form.getlist('ingredient_ids')
 
+        ingredients_selected = Ingredient.query.filter(Ingredient.id.in_(selected_ingredient_ids)).all()
+
+        # Fetch the recipe and update its fields
+        recipe = Recipe.query.get_or_404(id)
+        recipe.title = title
+        recipe.image_url = image_url
+        recipe.instructions = instructions
+
+        recipe.ingredients.clear()
+        recipe.ingredients.extend(ingredients_selected)
+        user = get_current_user()
+        user_id = user.id if user else None
+        recipe.user_id = user_id
+
+        # Commit the changes
         db.session.commit()
 
+
+        # Flash message and redirect
         flash('Recipe updated successfully', 'success')
         return redirect(url_for('detail_recipe', id=recipe.id))
 
-    return render_template('recipe/update.html', recipe=recipe)
+    return render_template('recipe/update.html', recipe=recipe, ingredients=ingredients)
 
 
 # Delete a recipe
@@ -331,9 +369,6 @@ def create_ingredient():
 
     return redirect(url_for('create_recipe'))
 
-
-if __name__ == '__main__':
-    app.run(debug=True)
 
 # @app.route('/recipes')
 # def recipe_list():

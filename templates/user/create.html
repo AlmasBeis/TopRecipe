@@ -9,9 +9,6 @@
 <body>
     {% include "header.html" %}
 
-    <div class="content">
-        {% block content %}{% endblock %}
-    </div>
     <h1>Create User</h1>
     <div class="input-box">
     <form class="form" method="POST" action="{{ url_for('user_create') }}">

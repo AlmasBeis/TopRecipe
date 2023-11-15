@@ -8,9 +8,9 @@
 
 <body>
     {% include "header.html" %}
-    <div class="content">
-        {% block content %}{% endblock %}
-    </div>
+<!--    <div class="content">-->
+<!--        {% block content %}{% endblock %}-->
+<!--    </div>-->
    <section class="home" id="home">
       <div class="content">
           <h1>Welcome to TopRecipe</h1>
@@ -30,5 +30,11 @@
    <div class="list">
        {% block list %}{% endblock %}
    </div>
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2023 TopRecipe. All rights reserved.</p>
+            <!-- Add more footer content as needed -->
+        </div>
+    </footer>
 </body>
 </html>
