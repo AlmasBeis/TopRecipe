@@ -14,7 +14,7 @@ db = SQLAlchemy(app)
 
 
 def user_auth_context_processor():
-    user_is_authenticated = 'user_id' in session  # Check if 'user_id' is in the session
+    user_is_authenticated = 'user_id' in session
     return {'user_is_authenticated': user_is_authenticated}
 
 
@@ -51,7 +51,7 @@ class Recipe(db.Model):
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     recipe_id = db.Column(db.Integer, db.ForeignKey('recipe.id'))
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     text = db.Column(db.Text, nullable=False)
     user = db.relationship('User')
 
@@ -285,7 +285,6 @@ def detail_recipe(id):
 
 
 @app.route('/recipe/<int:id>/add_comment', methods=['POST'])
-@login_required
 def add_comment(id):
     recipe = Recipe.query.get(id)
     text = request.form.get('comment')

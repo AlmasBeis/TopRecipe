@@ -163,6 +163,10 @@ textarea {
     color: grey;
 }
 
+.ingredients{
+    margin:10px;
+}
+
 .ingredient-boxes {
     display: flex;
     flex-wrap: wrap;
