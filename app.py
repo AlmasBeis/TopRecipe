@@ -244,7 +244,6 @@ def user_delete(id):
 @login_required
 def create_recipe():
     ingredients = Ingredient.query.all()
-
     if request.method == 'POST':
         title = request.form.get('title')
         image_url = request.form.get('image_url')
@@ -284,22 +283,6 @@ def detail_recipe(id):
     return render_template('recipe/detail.html', recipe=recipe, ingredients=ingredients, user_id=user_id)
 
 
-@app.route('/recipe/<int:id>/add_comment', methods=['POST'])
-def add_comment(id):
-    recipe = Recipe.query.get(id)
-    text = request.form.get('comment')
-
-    if text:
-        user = get_current_user()
-        user_id = user.id if user else None
-
-        new_comment = Comment(text=text, recipe_id=recipe.id, user_id=user_id)
-        db.session.add(new_comment)
-        db.session.commit()
-
-    return redirect(url_for('detail_recipe', id=id))
-
-
 # Update a recipe
 @app.route('/update_recipe/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -330,7 +313,6 @@ def update_recipe(id):
         # Commit the changes
         db.session.commit()
 
-
         # Flash message and redirect
         flash('Recipe updated successfully', 'success')
         return redirect(url_for('detail_recipe', id=recipe.id))
@@ -339,36 +321,122 @@ def update_recipe(id):
 
 
 # Delete a recipe
-@app.route('/recipe/delete/<int:id>', methods=['POST'])
+@app.route('/recipe/delete/<int:id>', methods=['GET', 'POST'])
 @login_required
 def delete_recipe(id):
     recipe = Recipe.query.get_or_404(id)
-    db.session.delete(recipe)
-    db.session.commit()
-    flash('Recipe deleted successfully', 'success')
-    return redirect(url_for('index'))
+    if request.method == 'POST':
+        db.session.delete(recipe)
+        db.session.commit()
+        flash('Recipe deleted successfully', 'success')
+        return redirect(url_for('index'))
 
 
-@app.route('/create-ingredient', methods=['GET'])
-def create_ingredient_form():
-    return render_template('ingredients/create.html')
+@app.route('/recipe/<int:id>/add_comment', methods=['POST'])
+def add_comment(id):
+    recipe = Recipe.query.get(id)
+    text = request.form.get('comment')
 
+    if text:
+        user = get_current_user()
+        user_id = user.id if user else None
 
-# Add a route for handling the form submission
-@app.route('/create-ingredient', methods=['POST'])
-def create_ingredient():
-    title = request.form.get('title')
-    image_url = request.form.get('image_url')
-    description = request.form.get('description')
-
-    if title and description:
-        new_ingredient = Ingredient(title=title, image_url=image_url, description=description)
-        db.session.add(new_ingredient)
+        new_comment = Comment(text=text, recipe_id=recipe.id, user_id=user_id)
+        db.session.add(new_comment)
         db.session.commit()
 
-    return redirect(url_for('create_recipe'))
+    return redirect(url_for('detail_recipe', id=id))
 
 
+@app.route('/comment/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_comment(id):
+    comment = Comment.query.get_or_404(id)
+
+    if request.method == 'POST':
+        comment.text = request.form.get('text')
+        db.session.commit()
+        return redirect(url_for('detail_recipe', id=comment.recipe.id))
+
+    return render_template('comments/edit.html', comment=comment)
+
+
+@app.route('/comment/<int:id>/delete', methods=['POST'])
+@login_required
+def delete_comment(id):
+    comment = Comment.query.get_or_404(id)
+    recipe_id = comment.recipe.id
+
+    db.session.delete(comment)
+    db.session.commit()
+
+    return redirect(url_for('detail_recipe', id=recipe_id))
+
+
+@app.route('/create-ingredient', methods=['GET', 'POST'])
+@app.route('/create-ingredient/<int:recipe_id>', methods=['GET', 'POST'])
+@login_required
+def create_ingredient(recipe_id=None):
+    if request.method == 'POST':
+        title = request.form.get('title')
+        image_url = request.form.get('image_url')
+        description = request.form.get('description')
+
+        if title and description:
+            new_ingredient = Ingredient(title=title, image_url=image_url, description=description)
+            db.session.add(new_ingredient)
+            db.session.commit()
+
+            if recipe_id:
+                return redirect(url_for('update_recipe', id=recipe_id))
+            else:
+                return redirect(url_for('create_recipe'))
+
+    return render_template('ingredients/create.html', recipe_id=recipe_id)
+
+
+@app.route('/ingredient/<int:ingredient_id>')
+@login_required
+def read_ingredient(ingredient_id):
+    ingredient = Ingredient.query.get_or_404(ingredient_id)
+    return render_template('ingredients/detail.html', ingredient=ingredient)
+
+
+@app.route('/ingredient/<int:ingredient_id>/update', methods=['GET', 'POST'])
+@login_required
+def update_ingredient(ingredient_id):
+    ingredient = Ingredient.query.get_or_404(ingredient_id)
+
+    if request.method == 'POST':
+        ingredient.title = request.form.get('title')
+        ingredient.image_url = request.form.get('image_url')
+        ingredient.description = request.form.get('description')
+
+        db.session.commit()
+
+        return redirect(url_for('read_ingredient', ingredient_id=ingredient_id))
+
+    return render_template('ingredients/update.html', ingredient=ingredient)
+
+
+@app.route('/ingredient/<int:ingredient_id>/delete', methods=['GET', 'POST'])
+@login_required
+def delete_ingredient(ingredient_id):
+    ingredient = Ingredient.query.get_or_404(ingredient_id)
+
+    # Check if the ingredient is used in any recipe
+    used_in_recipes = Recipe.query.filter(Recipe.ingredients.any(id=ingredient_id)).all()
+
+    if request.method == 'POST':
+        if used_in_recipes:
+            flash('Ingredient is used in recipes. Cannot delete.', 'error')
+        else:
+            db.session.delete(ingredient)
+            db.session.commit()
+            flash('Ingredient deleted successfully', 'success')
+        return redirect(url_for('index'))
+
+    return render_template('ingredients/delete.html', ingredient=ingredient, used_in_recipes=used_in_recipes)
 # @app.route('/recipes')
 # def recipe_list():
 #     recipes = Recipe.query.all()  # Query all recipes from the database

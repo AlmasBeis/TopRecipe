@@ -9,7 +9,7 @@
 .main-card {
     box-shadow: 0 10px 20px rgba(210, 22, 22, 0.2);
     border-radius: 5px;
-    margin: 50px 0;
+    margin: 10px 0;
     padding: 20px 0;
     justify-content: space-around;
 }
@@ -33,7 +33,7 @@
 
 .for-image img{
     border-radius: 1rem;
-    border: 5px solid #6b6b6b;
+    border: 5px solid #eaeaea;
     height:auto;
     width:40vw;
 }
@@ -68,7 +68,7 @@ h3 {
 .red-button {
     width: auto;
     padding: 10px 20px;
-    margin: 20px 25px 20px 5px;
+    margin: 10px;
     border: none;
     border-radius: 8px;
     background-color: #9a3939;
@@ -157,6 +157,11 @@ textarea {
     padding: 8px;
     background-color: #eaeaea;
     border-radius: 0.5rem;
+}
+
+.edit-item{
+    display: flex;
+    justify-content: right;
 }
 
 .author {
